@@ -15,6 +15,10 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    // Uploaded résumés. Use "s3" (any S3-compatible bucket, e.g. Cloudflare R2) on hosts
+    // whose disk is wiped on restart. Both options are private.
+    'resume_disk' => env('RESUME_DISK', 'local'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks

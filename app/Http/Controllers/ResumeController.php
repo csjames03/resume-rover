@@ -9,11 +9,11 @@ use App\Http\Resources\ResumeResource;
 use App\Jobs\ParseResume;
 use App\Models\Resume;
 use App\Models\Skill;
+use App\Services\Resumes\ResumeFiles;
 use App\Services\Resumes\ResumeUploader;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -57,11 +57,11 @@ class ResumeController extends Controller
     /**
      * Delete the file and everything parsed from it.
      */
-    public function destroy(Resume $resume): RedirectResponse
+    public function destroy(Resume $resume, ResumeFiles $files): RedirectResponse
     {
         Gate::authorize('delete', $resume);
 
-        Storage::disk(ResumeUploader::DISK)->delete($resume->storage_path);
+        $files->delete($resume);
         $resume->delete();
 
         $this->toast('Résumé and its parsed data were deleted.');

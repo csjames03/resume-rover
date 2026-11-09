@@ -16,7 +16,6 @@ use App\Services\Resumes\Parsing\ParsedResume;
 use App\Services\Skills\SkillMatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -32,6 +31,7 @@ class ResumeParsingService
         private readonly AiResumeParser $aiParser,
         private readonly AiGateway $gateway,
         private readonly SkillMatcher $skills,
+        private readonly ResumeFiles $files,
     ) {}
 
     public function parse(Resume $resume): void
@@ -39,9 +39,9 @@ class ResumeParsingService
         $resume->update(['parse_status' => ResumeParseStatus::Processing, 'parse_error' => null]);
 
         try {
-            $text = $this->extractor->extract(
-                Storage::disk(ResumeUploader::DISK)->path($resume->storage_path),
-                $resume->mime_type,
+            $text = $this->files->withLocalPath(
+                $resume,
+                fn (string $path) => $this->extractor->extract($path, $resume->mime_type),
             );
 
             if (mb_strlen($text) < 50) {

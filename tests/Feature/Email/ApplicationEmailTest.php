@@ -120,6 +120,38 @@ class ApplicationEmailTest extends TestCase
         $this->assertTrue($application->events()->where('type', ApplicationEventType::EmailSent)->exists());
     }
 
+    public function test_an_email_is_never_sent_without_the_resume_it_promises(): void
+    {
+        $this->connectGmail();
+        $email = $this->draft();
+        Storage::disk('local')->delete('resumes/1/cv.pdf'); // e.g. wiped by a host restart
+        Http::fake();
+
+        $this->actingAs($this->user)->post(route('application-emails.send', $email));
+
+        $this->assertNotSame(EmailStatus::Sent, $email->refresh()->status);
+        $this->assertStringContainsString('no longer stored', (string) $email->error);
+        Http::assertNothingSent();
+    }
+
+    public function test_resumes_on_a_remote_disk_are_attached_from_the_bucket(): void
+    {
+        config(['filesystems.resume_disk' => 's3']);
+        Storage::fake('s3');
+        Storage::disk('s3')->put('resumes/1/cv.pdf', '%PDF-1.4 from the bucket');
+        $this->connectGmail();
+        $email = $this->draft();
+        Http::fake(['gmail.googleapis.com/*' => Http::response(['id' => 'msg-456'])]);
+
+        $this->actingAs($this->user)->post(route('application-emails.send', $email));
+
+        $this->assertSame(EmailStatus::Sent, $email->refresh()->status, (string) $email->error);
+        Http::assertSent(fn (Request $request) => str_contains(
+            base64_decode(strtr($request['raw'], '-_', '+/')),
+            'James_Ocao_Resume.pdf',
+        ));
+    }
+
     public function test_an_expired_access_token_is_refreshed_before_sending(): void
     {
         $this->connectGmail(['token_expires_at' => now()->subMinute()]);

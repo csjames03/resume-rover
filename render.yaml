@@ -1,0 +1,79 @@
+# Render blueprint: Dashboard → New → Blueprint → pick this repo.
+# Values marked `sync: false` are secrets: Render asks for them and never stores them in git.
+# Step-by-step guide: docs/deploy.md
+services:
+    - type: web
+      name: resume-rover
+      runtime: docker
+      plan: free
+      region: singapore
+      healthCheckPath: /up
+      envVars:
+          # App
+          - key: APP_NAME
+            value: Resume Rover
+          - key: APP_ENV
+            value: production
+          - key: APP_DEBUG
+            value: 'false'
+          - key: APP_KEY # php artisan key:generate --show
+            sync: false
+          - key: APP_URL # https://<your-service>.onrender.com
+            sync: false
+          - key: TRUSTED_PROXIES
+            value: '*'
+          - key: LOG_CHANNEL
+            value: stderr
+          - key: LOG_LEVEL
+            value: info
+
+          # Database: Neon's *direct* (not pooled) connection string, with sslmode=require
+          - key: DB_CONNECTION
+            value: pgsql
+          - key: DB_URL
+            sync: false
+          - key: SESSION_DRIVER
+            value: database
+          - key: CACHE_STORE
+            value: database
+          - key: QUEUE_CONNECTION
+            value: database
+
+          # Accounts
+          - key: REGISTRATION_ENABLED
+            value: 'true'
+          - key: MAIL_MAILER
+            value: log
+
+          # AI: Groq's free tier
+          - key: AI_PROVIDER_PRIORITY
+            value: groq
+          - key: GROQ_API_KEY
+            sync: false
+          - key: GROQ_MODEL
+            value: llama-3.3-70b-versatile
+          - key: AI_USER_DAILY_LIMIT
+            value: '30'
+
+          # Résumé files: Render's free disk is wiped on restart, so use an S3-compatible bucket.
+          # Set RESUME_DISK=local to skip this (files then vanish on each restart).
+          - key: RESUME_DISK
+            value: s3
+          - key: AWS_ACCESS_KEY_ID
+            sync: false
+          - key: AWS_SECRET_ACCESS_KEY
+            sync: false
+          - key: AWS_DEFAULT_REGION
+            value: auto
+          - key: AWS_BUCKET
+            sync: false
+          - key: AWS_ENDPOINT # https://<account-id>.r2.cloudflarestorage.com
+            sync: false
+          - key: AWS_USE_PATH_STYLE_ENDPOINT
+            value: 'true'
+
+          # Gmail "apply by email" (optional)
+          - key: GOOGLE_CLIENT_ID
+            sync: false
+          - key: GOOGLE_CLIENT_SECRET
+            sync: false

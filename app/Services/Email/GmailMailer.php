@@ -6,11 +6,10 @@ use App\Models\ApplicationEmail;
 use App\Models\EmailConnection;
 use App\Services\Email\Exceptions\EmailNotSent;
 use App\Services\Email\Exceptions\GmailNotConnected;
-use App\Services\Resumes\ResumeUploader;
+use App\Services\Resumes\ResumeFiles;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
@@ -22,7 +21,10 @@ class GmailMailer
 {
     private const SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
 
-    public function __construct(private readonly GoogleOAuth $oauth) {}
+    public function __construct(
+        private readonly GoogleOAuth $oauth,
+        private readonly ResumeFiles $files,
+    ) {}
 
     /**
      * @return string Gmail's message id
@@ -60,12 +62,13 @@ class GmailMailer
 
         $resume = $email->resume;
 
-        if ($email->attach_resume && $resume !== null && Storage::disk(ResumeUploader::DISK)->exists($resume->storage_path)) {
-            $message->attachFromPath(
-                Storage::disk(ResumeUploader::DISK)->path($resume->storage_path),
-                $resume->original_filename,
-                $resume->mime_type,
-            );
+        if ($email->attach_resume && $resume !== null) {
+            // Never send an application that silently lost its attachment.
+            if (! $this->files->exists($resume)) {
+                throw new EmailNotSent('Your résumé file is no longer stored, so it can\'t be attached. Upload it again, or untick "Attach my résumé".');
+            }
+
+            $message->attach($this->files->contents($resume), $resume->original_filename, $resume->mime_type);
         }
 
         return $message;

@@ -1,0 +1,37 @@
+# Rendered by docker/start.sh: only ${PORT} is substituted.
+server {
+    listen ${PORT} default_server;
+    server_name _;
+    root /var/www/html/public;
+    index index.php;
+
+    server_tokens off;
+    client_max_body_size 8m;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Hashed Vite assets never change, so browsers can keep them for a year.
+    location /build/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_hide_header X-Powered-By;
+        fastcgi_read_timeout 120s;
+    }
+
+    # Dotfiles (.env and friends) are never served.
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}

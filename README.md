@@ -91,16 +91,21 @@ One-time setup (about 5 minutes):
 
 While the Google app is in _Testing_ mode, Google expires the connection after 7 days; the app will ask you to reconnect.
 
+## Deploying
+
+[`docs/deploy.md`](docs/deploy.md) walks through a $0 deploy: Render (one Docker service running the site, queue and scheduler), Neon PostgreSQL, Groq's free tier, and an optional Cloudflare R2 bucket for résumé files. `render.yaml` is the blueprint.
+
 ## Useful commands
 
-| Command                                           | What it does                                                                    |
-| ------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `php artisan postings:fetch [id] [--due] [--now]` | Fetch job sources (queued unless `--now`)                                       |
-| `php artisan postings:reanalyze`                  | Re-extract requirements after editing `database/data/skills.php`, then re-score |
-| `php artisan db:seed --class=SkillSeeder`         | Load dictionary changes                                                         |
-| `php artisan users:admin {email} [--revoke]`      | Grant or remove admin rights (managing job sources)                             |
-| `composer test`                                   | Pint, Larastan (level 7) and the PHPUnit suite                                  |
-| `npm run check` / `npm run types:check`           | Frontend lint/format and TypeScript                                             |
+| Command                                           | What it does                                                                      |
+| ------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `php artisan postings:fetch [id] [--due] [--now]` | Fetch job sources (queued unless `--now`)                                         |
+| `php artisan postings:reanalyze`                  | Re-extract requirements after editing `database/data/skills.php`, then re-score   |
+| `php artisan db:seed --class=SkillSeeder`         | Load dictionary changes                                                           |
+| `php artisan app:seed-defaults [--force]`         | Load the skills dictionary and starter sources on a fresh database (runs on boot) |
+| `php artisan users:admin {email} [--revoke]`      | Grant or remove admin rights (managing job sources)                               |
+| `composer test`                                   | Pint, Larastan (level 7) and the PHPUnit suite                                    |
+| `npm run check` / `npm run types:check`           | Frontend lint/format and TypeScript                                               |
 
 Tests run against PostgreSQL (`resume_rover_test`), because the app relies on Postgres features.
 

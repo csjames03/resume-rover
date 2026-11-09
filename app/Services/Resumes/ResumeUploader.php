@@ -10,8 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class ResumeUploader
 {
-    /** Private disk: résumés are never publicly reachable. */
-    public const DISK = 'local';
+    public function __construct(private readonly ResumeFiles $files) {}
 
     /**
      * Store the file, make it the active résumé, and queue parsing.
@@ -26,7 +25,7 @@ class ResumeUploader
             return $active;
         }
 
-        $path = $file->store("resumes/{$user->id}", self::DISK);
+        $path = $this->files->store($user, $file);
 
         $resume = DB::transaction(function () use ($user, $file, $hash, $path) {
             $user->resumes()->where('is_active', true)->update(['is_active' => false]);

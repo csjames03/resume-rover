@@ -54,6 +54,9 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Load balancers to trust for HTTPS and client IPs: "*" on Render, empty locally.
+    'trusted_proxies' => env('TRUSTED_PROXIES', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

@@ -101,6 +101,17 @@ class SecurityTest extends TestCase
             ->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
 
+    public function test_https_behind_a_trusted_proxy_is_recognised(): void
+    {
+        $forwarded = ['X-Forwarded-Proto' => 'https', 'X-Forwarded-For' => '203.0.113.9'];
+
+        // Untrusted by default: anyone could send these headers.
+        $this->withHeaders($forwarded)->get(route('home'))->assertHeaderMissing('Strict-Transport-Security');
+
+        config(['app.trusted_proxies' => '*']);
+        $this->withHeaders($forwarded)->get(route('home'))->assertHeader('Strict-Transport-Security');
+    }
+
     public function test_an_unexpected_appearance_cookie_is_ignored(): void
     {
         $response = $this->withUnencryptedCookie('appearance', "dark';alert(1);//")->get(route('home'));
