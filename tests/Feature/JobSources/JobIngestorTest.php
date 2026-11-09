@@ -111,7 +111,7 @@ class JobIngestorTest extends TestCase
     {
         Queue::fake();
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->admin()->create())
             ->post(route('sources.store'), [
                 'name' => 'Arbeitnow',
                 'driver' => 'arbeitnow',
@@ -122,7 +122,7 @@ class JobIngestorTest extends TestCase
             ])
             ->assertSessionHasNoErrors();
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs(User::factory()->admin()->create())
             ->post(route('sources.store'), ['name' => 'Ashby', 'driver' => 'ashby', 'identifier' => null, 'fetch_interval_minutes' => 360])
             ->assertSessionHasErrors('identifier');
     }

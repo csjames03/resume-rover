@@ -11,6 +11,14 @@ use Illuminate\Validation\Rule;
 class JobSourceRequest extends FormRequest
 {
     /**
+     * Checked before validation, so non-admins get a 403 rather than field errors.
+     */
+    public function authorize(): bool
+    {
+        return $this->user()?->can('manage-job-sources') ?? false;
+    }
+
+    /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array

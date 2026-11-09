@@ -142,9 +142,10 @@ return [
     |
     */
 
-    'features' => [
-        Features::registration(),
+    // Turn registration off on a public deploy so strangers can't spend your AI quota.
+    'features' => array_values(array_filter([
+        env('REGISTRATION_ENABLED', true) ? Features::registration() : null,
         Features::resetPasswords(),
-    ],
+    ])),
 
 ];

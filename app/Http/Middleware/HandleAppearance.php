@@ -9,6 +9,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class HandleAppearance
 {
+    private const APPEARANCES = ['light', 'dark', 'system'];
+
     /**
      * Handle an incoming request.
      *
@@ -16,7 +18,10 @@ class HandleAppearance
      */
     public function handle(Request $request, Closure $next): Response
     {
-        View::share('appearance', $request->cookie('appearance') ?? 'system');
+        // The cookie is client-controlled and printed into an inline script, so only known values pass.
+        $appearance = $request->cookie('appearance');
+
+        View::share('appearance', in_array($appearance, self::APPEARANCES, true) ? $appearance : 'system');
 
         return $next($request);
     }

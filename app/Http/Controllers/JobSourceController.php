@@ -9,15 +9,18 @@ use App\Jobs\IngestJobSource;
 use App\Models\JobSource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Job sources are shared configuration (postings are the same for every user).
+ * Job sources are shared configuration (postings are the same for every user):
+ * anyone can see them, only admins can change them.
  */
 class JobSourceController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $sources = JobSource::query()
             ->withCount(['postings' => fn (Builder $q) => $q->whereNull('closed_at')])
@@ -26,6 +29,7 @@ class JobSourceController extends Controller
 
         return Inertia::render('sources/index', [
             'sources' => JobSourceResource::collection($sources),
+            'canManage' => $request->user()->can('manage-job-sources'),
             'drivers' => collect(JobSourceDriver::cases())->map(fn (JobSourceDriver $driver) => [
                 'value' => $driver->value,
                 'label' => $driver->label().($driver->requiresIdentifier() ? ' · company board' : ' · job board'),
@@ -38,6 +42,8 @@ class JobSourceController extends Controller
 
     public function store(JobSourceRequest $request): RedirectResponse
     {
+        Gate::authorize('manage-job-sources');
+
         $source = JobSource::query()->create($request->validated());
         IngestJobSource::dispatch($source->id);
 
@@ -48,6 +54,8 @@ class JobSourceController extends Controller
 
     public function update(JobSourceRequest $request, JobSource $source): RedirectResponse
     {
+        Gate::authorize('manage-job-sources');
+
         $source->update($request->validated());
         $this->toast("{$source->name} saved.");
 
@@ -56,6 +64,8 @@ class JobSourceController extends Controller
 
     public function destroy(JobSource $source): RedirectResponse
     {
+        Gate::authorize('manage-job-sources');
+
         // Postings (and the user's history on them) are kept: the source is just switched off.
         if ($source->postings()->exists()) {
             $source->update(['is_enabled' => false]);
@@ -72,6 +82,8 @@ class JobSourceController extends Controller
 
     public function fetch(JobSource $source): RedirectResponse
     {
+        Gate::authorize('manage-job-sources');
+
         if (! $source->canFetchNow()) {
             $this->toast("{$source->name} was fetched recently. Its terms allow a refresh every {$source->driver->minimumIntervalMinutes()} minutes.", 'warning');
 

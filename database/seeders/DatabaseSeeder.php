@@ -15,10 +15,11 @@ class DatabaseSeeder extends Seeder
         ]);
 
         if (app()->isLocal()) {
-            User::query()->firstOrCreate(
+            $user = User::query()->firstOrCreate(
                 ['email' => 'test@example.com'],
                 ['name' => 'Test User', 'password' => 'password', 'email_verified_at' => now()],
             );
+            $user->forceFill(['is_admin' => true])->save();
         }
     }
 }

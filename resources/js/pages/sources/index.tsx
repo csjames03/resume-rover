@@ -1,11 +1,12 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Pencil, Plus, RefreshCw, Rss, Trash2 } from 'lucide-react';
+import { Lock, Pencil, Plus, RefreshCw, Rss, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import JobSourceController from '@/actions/App/Http/Controllers/JobSourceController';
 import { EmptyState } from '@/components/empty-state';
 import InputError from '@/components/input-error';
 import { OptionSelect } from '@/components/option-select';
 import { PageHeader } from '@/components/page-header';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -42,9 +43,10 @@ type Driver = {
 type Props = {
     sources: JobSource[];
     drivers: Driver[];
+    canManage: boolean;
 };
 
-export default function SourcesIndex({ sources, drivers }: Props) {
+export default function SourcesIndex({ sources, drivers, canManage }: Props) {
     const [editing, setEditing] = useState<JobSource | 'new' | null>(null);
 
     return (
@@ -56,11 +58,24 @@ export default function SourcesIndex({ sources, drivers }: Props) {
                     title="Job sources"
                     description="Official, public job feeds only: no scraping, no CAPTCHA tricks. Each source keeps its own fetch limits."
                     actions={
-                        <Button onClick={() => setEditing('new')}>
-                            <Plus /> Add source
-                        </Button>
+                        canManage && (
+                            <Button onClick={() => setEditing('new')}>
+                                <Plus /> Add source
+                            </Button>
+                        )
                     }
                 />
+
+                {!canManage && (
+                    <Alert>
+                        <Lock />
+                        <AlertTitle>Sources are shared</AlertTitle>
+                        <AlertDescription>
+                            Every account sees these feeds, so only an admin can
+                            change them.
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 {sources.length === 0 ? (
                     <EmptyState
@@ -81,7 +96,7 @@ export default function SourcesIndex({ sources, drivers }: Props) {
                                         Refresh
                                     </TableHead>
                                     <TableHead>Last fetch</TableHead>
-                                    <TableHead className="w-0" />
+                                    {canManage && <TableHead className="w-0" />}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -89,6 +104,7 @@ export default function SourcesIndex({ sources, drivers }: Props) {
                                     <SourceRow
                                         key={source.id}
                                         source={source}
+                                        canManage={canManage}
                                         onEdit={() => setEditing(source)}
                                     />
                                 ))}
@@ -98,22 +114,26 @@ export default function SourcesIndex({ sources, drivers }: Props) {
                 )}
             </div>
 
-            <SourceDialog
-                key={editing === 'new' ? 'new' : editing?.id}
-                source={editing === 'new' ? null : editing}
-                open={editing !== null}
-                drivers={drivers}
-                onClose={() => setEditing(null)}
-            />
+            {canManage && (
+                <SourceDialog
+                    key={editing === 'new' ? 'new' : editing?.id}
+                    source={editing === 'new' ? null : editing}
+                    open={editing !== null}
+                    drivers={drivers}
+                    onClose={() => setEditing(null)}
+                />
+            )}
         </>
     );
 }
 
 function SourceRow({
     source,
+    canManage,
     onEdit,
 }: {
     source: JobSource;
+    canManage: boolean;
     onEdit: () => void;
 }) {
     const fetchNow = () =>
@@ -176,35 +196,37 @@ function SourceRow({
                     <span className="text-muted-foreground">Never</span>
                 )}
             </TableCell>
-            <TableCell>
-                <div className="flex gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={fetchNow}
-                        disabled={!source.is_enabled}
-                        aria-label={`Fetch ${source.name} now`}
-                    >
-                        <RefreshCw />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onEdit}
-                        aria-label={`Edit ${source.name}`}
-                    >
-                        <Pencil />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={remove}
-                        aria-label={`Remove ${source.name}`}
-                    >
-                        <Trash2 />
-                    </Button>
-                </div>
-            </TableCell>
+            {canManage && (
+                <TableCell>
+                    <div className="flex gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={fetchNow}
+                            disabled={!source.is_enabled}
+                            aria-label={`Fetch ${source.name} now`}
+                        >
+                            <RefreshCw />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onEdit}
+                            aria-label={`Edit ${source.name}`}
+                        >
+                            <Pencil />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={remove}
+                            aria-label={`Remove ${source.name}`}
+                        >
+                            <Trash2 />
+                        </Button>
+                    </div>
+                </TableCell>
+            )}
         </TableRow>
     );
 }

@@ -12,7 +12,10 @@ import AppLogoIcon from '@/components/app-logo-icon';
 import { CompanyAvatar } from '@/components/company-avatar';
 import { FitBadge, ScoreRing } from '@/components/fit-badge';
 import { Button } from '@/components/ui/button';
-import { dashboard, login, register } from '@/routes';
+import { dashboard, login } from '@/routes';
+
+// A plain path: when registration is off, Wayfinder generates no helper for it.
+const REGISTER_URL = '/register';
 
 const FEATURES = [
     {
@@ -38,7 +41,7 @@ const FEATURES = [
 ];
 
 export default function Welcome() {
-    const { auth, name } = usePage().props;
+    const { auth, name, canRegister } = usePage().props;
 
     return (
         <>
@@ -68,9 +71,13 @@ export default function Welcome() {
                                 <Button variant="ghost" asChild>
                                     <Link href={login()}>Log in</Link>
                                 </Button>
-                                <Button asChild>
-                                    <Link href={register()}>Get started</Link>
-                                </Button>
+                                {canRegister && (
+                                    <Button asChild>
+                                        <Link href={REGISTER_URL}>
+                                            Get started
+                                        </Link>
+                                    </Button>
+                                )}
                             </>
                         )}
                     </nav>
@@ -97,16 +104,22 @@ export default function Welcome() {
                                 <Button size="lg" asChild>
                                     <Link
                                         href={
-                                            auth.user ? dashboard() : register()
+                                            auth.user
+                                                ? dashboard()
+                                                : canRegister
+                                                  ? REGISTER_URL
+                                                  : login()
                                         }
                                     >
                                         {auth.user
                                             ? 'Open dashboard'
-                                            : 'Create your account'}
+                                            : canRegister
+                                              ? 'Create your account'
+                                              : 'Log in'}
                                         <ArrowRight />
                                     </Link>
                                 </Button>
-                                {!auth.user && (
+                                {!auth.user && canRegister && (
                                     <Button size="lg" variant="outline" asChild>
                                         <Link href={login()}>Log in</Link>
                                     </Button>

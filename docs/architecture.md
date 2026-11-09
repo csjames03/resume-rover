@@ -104,4 +104,8 @@ Enum-like columns are plain strings cast to PHP enums, because PostgreSQL enum c
 - Job sources are official public feeds. Each driver has a minimum refresh interval (Remotive: 6 h, per its terms), Remotive jobs are shown "via Remotive" with a link back, and no HTML from job boards reaches the browser.
 - Nothing is sent anywhere automatically. Tailored drafts need explicit approval before download, and application emails go out only when the user clicks Send and confirms.
 - Gmail access is send-only (`gmail.send`). Tokens are encrypted, refreshed automatically, and revoked at Google on disconnect.
+- Job sources are shared, so changing them takes the `manage-job-sources` gate (`users.is_admin`). Admin rights are granted only with `php artisan users:admin`: email verification is off, so an email allowlist could be claimed by whoever registers first.
+- Every response carries a nonce-based Content Security Policy (only scripts the app rendered can run), `X-Frame-Options: DENY`, `nosniff`, a strict referrer policy, and HSTS over HTTPS (`SecurityHeaders` middleware).
+- Sessions are encrypted, cookies are HTTP-only and `SameSite=Lax`, and HTTPS-only by default in production. Registration can be turned off with `REGISTRATION_ENABLED=false`.
+- Cookies the browser can edit (`appearance`) are checked against an allowlist before they reach a template.
 - The database connection is pinned to UTC (`DB_TIMEZONE`), so timestamps are never shifted by the server's local zone.
