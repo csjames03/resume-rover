@@ -81,6 +81,38 @@ class JobsAndApplicationsTest extends TestCase
         );
     }
 
+    public function test_the_applications_page_remembers_the_board_view(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get(route('applications.index', ['view' => 'board']))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('view', 'board'));
+
+        // Anything unexpected falls back to the table.
+        $this->actingAs($user)->get(route('applications.index', ['view' => 'gallery']))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('view', 'table'));
+    }
+
+    public function test_dropping_a_card_on_another_column_changes_only_the_status(): void
+    {
+        $user = User::factory()->create();
+        $application = Application::query()->create([
+            'user_id' => $user->id,
+            'job_posting_id' => JobPosting::factory()->create()->id,
+            'status' => ApplicationStatus::Applied,
+            'notes' => 'Keep me',
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('applications.update', $application), ['status' => 'interviewing'])
+            ->assertSessionHasNoErrors();
+
+        $application->refresh();
+        $this->assertSame(ApplicationStatus::Interviewing, $application->status);
+        $this->assertSame('Keep me', $application->notes);
+        $this->assertSame(ApplicationEventType::StatusChanged, $application->events()->latest('id')->value('type'));
+    }
+
     public function test_users_cannot_update_someone_elses_application(): void
     {
         $application = Application::query()->create([

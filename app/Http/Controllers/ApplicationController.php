@@ -33,6 +33,8 @@ class ApplicationController extends Controller
             'applications' => ApplicationResource::collection($applications),
             'statuses' => ApplicationStatus::options(),
             'showingArchived' => $archived,
+            // Kept in the URL so a bookmarked or shared link opens the same view.
+            'view' => $request->query('view') === 'board' ? 'board' : 'table',
         ]);
     }
 

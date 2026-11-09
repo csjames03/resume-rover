@@ -1,59 +1,62 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { KanbanSquare } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { KanbanSquare, Rows3 } from 'lucide-react';
 import ApplicationController from '@/actions/App/Http/Controllers/ApplicationController';
-import { CompanyAvatar } from '@/components/company-avatar';
+import { ApplicationBoard } from '@/components/applications/application-board';
+import { ApplicationTable } from '@/components/applications/application-table';
 import { EmptyState } from '@/components/empty-state';
-import { OptionSelect } from '@/components/option-select';
 import { PageHeader } from '@/components/page-header';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { formatDate, timeAgo } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { index } from '@/routes/applications';
-import { index as jobsIndex, show as showJob } from '@/routes/jobs';
+import { index as jobsIndex } from '@/routes/jobs';
 import type { Application, ApplicationStatus, Option } from '@/types';
+
+type View = 'table' | 'board';
 
 type Props = {
     applications: Application[];
     statuses: Option[];
     showingArchived: boolean;
+    view: View;
 };
 
-// Open stages first, closed outcomes last.
-const ORDER: ApplicationStatus[] = [
-    'interviewing',
-    'offer',
-    'applied',
-    'preparing',
-    'saved',
-    'rejected',
-    'withdrawn',
+const VIEWS: { value: View; label: string; icon: LucideIcon }[] = [
+    { value: 'table', label: 'Table', icon: Rows3 },
+    { value: 'board', label: 'Board', icon: KanbanSquare },
 ];
 
 export default function ApplicationsIndex({
     applications,
     statuses,
     showingArchived,
+    view,
 }: Props) {
-    const sorted = [...applications].sort(
-        (a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status),
-    );
+    const query = (changes: { archived?: boolean; view?: View }) => {
+        const archived = changes.archived ?? showingArchived;
+        const nextView = changes.view ?? view;
 
-    const changeStatus = (application: Application, status: string | null) => {
-        if (status) {
-            router.patch(
-                ApplicationController.update(application.id).url,
-                { status },
-                { preserveScroll: true },
-            );
-        }
+        return {
+            ...(archived ? { archived: 1 } : {}),
+            ...(nextView === 'board' ? { view: 'board' } : {}),
+        };
+    };
+
+    const changeStatus = (
+        application: Application,
+        status: ApplicationStatus,
+        onSettled?: () => void,
+    ) => {
+        router.patch(
+            ApplicationController.update(application.id).url,
+            { status },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['applications'],
+                onFinish: onSettled,
+            },
+        );
     };
 
     return (
@@ -67,25 +70,63 @@ export default function ApplicationsIndex({
                             ? 'Archived applications'
                             : 'Applications'
                     }
-                    description="Every job you've saved or applied to, in one place."
+                    description={
+                        view === 'board'
+                            ? 'Drag a card to another column to change its status.'
+                            : "Every job you've saved or applied to, in one place."
+                    }
                     actions={
-                        <Button variant="outline" size="sm" asChild>
-                            <Link
-                                href={index({
-                                    query: showingArchived
-                                        ? {}
-                                        : { archived: 1 },
-                                })}
+                        <>
+                            <nav
+                                aria-label="View"
+                                className="inline-flex rounded-lg border bg-muted/60 p-0.5"
                             >
-                                {showingArchived
-                                    ? 'Show active'
-                                    : 'Show archived'}
-                            </Link>
-                        </Button>
+                                {VIEWS.map((option) => (
+                                    <Link
+                                        key={option.value}
+                                        href={index({
+                                            query: query({
+                                                view: option.value,
+                                            }),
+                                        })}
+                                        preserveScroll
+                                        aria-current={
+                                            view === option.value
+                                                ? 'page'
+                                                : undefined
+                                        }
+                                        className={cn(
+                                            'inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                                            view === option.value &&
+                                                'bg-background text-foreground shadow-sm',
+                                        )}
+                                    >
+                                        <option.icon
+                                            className="size-4"
+                                            aria-hidden
+                                        />
+                                        {option.label}
+                                    </Link>
+                                ))}
+                            </nav>
+                            <Button variant="outline" size="sm" asChild>
+                                <Link
+                                    href={index({
+                                        query: query({
+                                            archived: !showingArchived,
+                                        }),
+                                    })}
+                                >
+                                    {showingArchived
+                                        ? 'Show active'
+                                        : 'Show archived'}
+                                </Link>
+                            </Button>
+                        </>
                     }
                 />
 
-                {sorted.length === 0 ? (
+                {applications.length === 0 ? (
                     <EmptyState
                         icon={KanbanSquare}
                         title={
@@ -100,119 +141,17 @@ export default function ApplicationsIndex({
                             </Button>
                         }
                     />
+                ) : view === 'board' ? (
+                    <ApplicationBoard
+                        applications={applications}
+                        onStatusChange={changeStatus}
+                    />
                 ) : (
-                    <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-muted/40 hover:bg-muted/40">
-                                    <TableHead className="pl-4">Role</TableHead>
-                                    <TableHead className="w-44">
-                                        Status
-                                    </TableHead>
-                                    <TableHead className="hidden md:table-cell">
-                                        Next action
-                                    </TableHead>
-                                    <TableHead className="hidden lg:table-cell">
-                                        Applied
-                                    </TableHead>
-                                    <TableHead className="hidden lg:table-cell">
-                                        Updated
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {sorted.map((application) => (
-                                    <TableRow key={application.id}>
-                                        <TableCell className="py-3">
-                                            <div className="flex items-center gap-3">
-                                                {application.posting && (
-                                                    <CompanyAvatar
-                                                        name={
-                                                            application.posting
-                                                                .company
-                                                        }
-                                                        size="sm"
-                                                        className="hidden sm:inline-flex"
-                                                    />
-                                                )}
-                                                <div className="min-w-0">
-                                                    {application.posting && (
-                                                        <Link
-                                                            href={showJob(
-                                                                application
-                                                                    .posting.id,
-                                                            )}
-                                                            className="font-semibold hover:text-primary"
-                                                        >
-                                                            {
-                                                                application
-                                                                    .posting
-                                                                    .title
-                                                            }
-                                                        </Link>
-                                                    )}
-                                                    <div className="text-sm text-muted-foreground">
-                                                        {
-                                                            application.posting
-                                                                ?.company
-                                                        }
-                                                        {application.posting
-                                                            ?.closed_at && (
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="ml-2"
-                                                            >
-                                                                Posting closed
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <OptionSelect
-                                                value={application.status}
-                                                options={statuses}
-                                                onChange={(status) =>
-                                                    changeStatus(
-                                                        application,
-                                                        status,
-                                                    )
-                                                }
-                                                className="w-40"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="hidden text-sm md:table-cell">
-                                            {application.next_action ? (
-                                                <>
-                                                    <div>
-                                                        {
-                                                            application.next_action
-                                                        }
-                                                    </div>
-                                                    <div className="text-muted-foreground">
-                                                        {formatDate(
-                                                            application.next_action_at,
-                                                        )}
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <span className="text-muted-foreground">
-                                                    —
-                                                </span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
-                                            {formatDate(application.applied_at)}
-                                        </TableCell>
-                                        <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
-                                            {timeAgo(application.updated_at)}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+                    <ApplicationTable
+                        applications={applications}
+                        statuses={statuses}
+                        onStatusChange={changeStatus}
+                    />
                 )}
             </div>
         </>
