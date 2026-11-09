@@ -11,6 +11,9 @@ use App\Services\Ai\Data\AiResponse;
 use App\Services\Ai\Data\AiResult;
 use App\Services\Ai\Exceptions\AiProviderException;
 use App\Services\Ai\Exceptions\AiUnavailableException;
+use App\Services\Ai\Quota\ProviderQuotas;
+use App\Services\Ai\Quota\RateLimitSnapshot;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -19,12 +22,22 @@ use Illuminate\Validation\ValidationException;
  * The single entry point for AI work. Features ask for a task; the gateway
  * picks a healthy provider, validates the JSON it returns, and fails over to
  * the next provider on rate limits, outages or malformed output.
+ *
+ * Free tiers are tight, so it also reads each provider's quota headers and
+ * skips a provider that would refuse the request, instead of waiting for a 429.
  */
 class AiGateway
 {
+    // Below this there's no room for a useful answer.
+    private const MIN_OUTPUT_TOKENS = 300;
+
+    // Headroom for chat formatting and estimation error.
+    private const TOKEN_MARGIN = 100;
+
     public function __construct(
         private readonly ProviderRegistry $registry,
         private readonly ProviderCooldowns $cooldowns,
+        private readonly ProviderQuotas $quotas,
     ) {}
 
     /**
@@ -44,12 +57,30 @@ class AiGateway
     public function json(AiRequest $request, array $rules): AiResult
     {
         $providers = $this->registry->forTask($request->task);
-        $maxTokens = (int) config("ai.tasks.{$request->task->value}.max_tokens", 2000);
+        $maxTokens = $this->maxTokens($request->task);
+        $inputTokens = $this->estimateTokens($request);
         $failures = [];
 
         foreach ($providers as $provider) {
-            if ($this->cooldowns->isCoolingDown($provider->name())) {
-                $failures[$provider->name()] = 'cooling down';
+            $name = $provider->name();
+
+            if ($this->cooldowns->isCoolingDown($name)) {
+                $failures[$name] = 'cooling down';
+
+                continue;
+            }
+
+            $quota = $this->quotas->get($name);
+            $outputTokens = $this->fitToQuota($maxTokens, $inputTokens, $quota);
+
+            if ($outputTokens === null) {
+                $failures[$name] = AiOutcome::TooLarge->value;
+
+                continue;
+            }
+
+            if ($quota?->secondsUntilUsable($inputTokens + $outputTokens, CarbonImmutable::now()) !== null) {
+                $failures[$name] = 'quota used up';
 
                 continue;
             }
@@ -57,9 +88,11 @@ class AiGateway
             $startedAt = hrtime(true);
 
             try {
-                $response = $provider->complete($request, $maxTokens);
+                $response = $provider->complete($request, $outputTokens);
+                $this->rememberQuota($name, $response->rateLimit);
                 $data = $this->decodeAndValidate($response->content, $rules);
             } catch (AiProviderException $e) {
+                $this->rememberQuota($name, $e->rateLimit);
                 $this->record($provider, $request->task, $e->outcome, $startedAt, error: $e);
 
                 if ($e->outcome->triggersCooldown()) {
@@ -81,11 +114,71 @@ class AiGateway
             return new AiResult($data, $provider->name(), $provider->model());
         }
 
-        throw new AiUnavailableException(
-            $request->task,
-            $failures,
-            $this->cooldowns->secondsUntilAnyAvailable(array_map(fn (AiProvider $p) => $p->name(), $providers)),
-        );
+        $wait = $this->secondsUntilAvailable($request->task);
+
+        throw new AiUnavailableException($request->task, $failures, $wait === 0 ? null : $wait);
+    }
+
+    /**
+     * Seconds until some provider for this task should accept a typical request:
+     * 0 means now, null means no provider is configured. Used to tell users how
+     * long to wait before they press the button.
+     */
+    public function secondsUntilAvailable(AiTask $task): ?int
+    {
+        $providers = $this->registry->forTask($task);
+
+        if ($providers === []) {
+            return null;
+        }
+
+        $now = CarbonImmutable::now();
+        $needed = $this->maxTokens($task);
+
+        $waits = array_map(function (AiProvider $provider) use ($now, $needed): int {
+            $cooldown = $this->cooldowns->until($provider->name());
+            $cooldownWait = $cooldown?->isFuture() ? (int) ceil($now->diffInSeconds($cooldown, absolute: true)) : 0;
+            $quotaWait = $this->quotas->get($provider->name())?->secondsUntilUsable($needed, $now) ?? 0;
+
+            return max($cooldownWait, $quotaWait);
+        }, $providers);
+
+        return min($waits);
+    }
+
+    /**
+     * Shrinks the answer budget to fit a provider's per-minute token limit,
+     * or null when even a short answer wouldn't fit.
+     */
+    private function fitToQuota(int $maxTokens, int $inputTokens, ?RateLimitSnapshot $quota): ?int
+    {
+        if ($quota?->limitTokens === null) {
+            return $maxTokens;
+        }
+
+        $room = $quota->limitTokens - $inputTokens - self::TOKEN_MARGIN;
+
+        return $room < self::MIN_OUTPUT_TOKENS ? null : min($maxTokens, $room);
+    }
+
+    /**
+     * Rough count (about 3.5 characters per token) for budgeting, not billing.
+     */
+    private function estimateTokens(AiRequest $request): int
+    {
+        return (int) ceil(mb_strlen($request->system.$request->prompt) / 3.5);
+    }
+
+    private function maxTokens(AiTask $task): int
+    {
+        return (int) config("ai.tasks.{$task->value}.max_tokens", 2000);
+    }
+
+    private function rememberQuota(string $provider, ?RateLimitSnapshot $snapshot): void
+    {
+        if ($snapshot !== null) {
+            $this->quotas->record($provider, $snapshot);
+        }
     }
 
     /**

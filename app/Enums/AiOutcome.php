@@ -17,6 +17,8 @@ enum AiOutcome: string
     case AuthError = 'auth_error';
     case InvalidRequest = 'invalid_request';
     case InvalidOutput = 'invalid_output';
+    // Bigger than this provider's per-minute token allowance; another provider may take it.
+    case TooLarge = 'too_large';
 
     /**
      * Whether trying another provider could succeed where this one failed.

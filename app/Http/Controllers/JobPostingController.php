@@ -14,6 +14,7 @@ use App\Http\Resources\TailoredResumeResource;
 use App\Models\JobPosting;
 use App\Models\JobSource;
 use App\Queries\JobPostingSearch;
+use App\Services\Ai\AiAvailability;
 use App\Services\Ai\AiGateway;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -38,7 +39,7 @@ class JobPostingController extends Controller
         ]);
     }
 
-    public function show(Request $request, JobPosting $posting, AiGateway $gateway): Response
+    public function show(Request $request, JobPosting $posting, AiGateway $gateway, AiAvailability $availability): Response
     {
         $user = $request->user();
         $mine = fn ($query) => $query->where('user_id', $user->id);
@@ -59,6 +60,7 @@ class JobPostingController extends Controller
             'ai' => [
                 'explain' => $gateway->isEnabled(AiTask::ExplainMatch),
                 'tailor' => $gateway->isEnabled(AiTask::TailorResume),
+                'usage' => $availability->status($user),
             ],
         ]);
     }

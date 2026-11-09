@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react';
 import { Mail } from 'lucide-react';
 import ApplicationEmailController from '@/actions/App/Http/Controllers/ApplicationEmailController';
 import { Badge } from '@/components/ui/badge';
+import { AiUsageNote, useAiGate } from '@/components/jobs/ai-usage';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -11,7 +12,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { timeAgo } from '@/lib/format';
-import type { ApplicationEmail } from '@/types';
+import type { AiUsage, ApplicationEmail } from '@/types';
 
 const STATUS_LABEL: Record<ApplicationEmail['status'], string> = {
     draft: 'Draft',
@@ -26,11 +27,14 @@ export function EmailPanel({
     postingId,
     emails,
     canDraft,
+    usage,
 }: {
     postingId: number;
     emails: ApplicationEmail[];
     canDraft: boolean;
+    usage: AiUsage;
 }) {
+    const gate = useAiGate(usage);
     const draft = () =>
         router.post(ApplicationEmailController.store(postingId).url);
 
@@ -86,7 +90,15 @@ export function EmailPanel({
                         ? 'Write another email'
                         : 'Draft application email'}
                 </Button>
-                {!canDraft && (
+                {canDraft ? (
+                    // Never blocked: without AI the draft comes from a template.
+                    usage.enabled && (
+                        <AiUsageNote
+                            gate={gate}
+                            fallback="New drafts use the built-in template until then."
+                        />
+                    )
+                ) : (
                     <p className="text-xs text-muted-foreground">
                         Upload your résumé first.
                     </p>

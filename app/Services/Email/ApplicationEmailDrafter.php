@@ -10,6 +10,7 @@ use App\Models\JobPosting;
 use App\Models\Resume;
 use App\Models\ResumeSection;
 use App\Models\User;
+use App\Services\Ai\AiAvailability;
 use App\Services\Ai\AiGateway;
 use App\Services\Ai\Data\AiRequest;
 use App\Services\Ai\Exceptions\AiProviderException;
@@ -38,6 +39,7 @@ class ApplicationEmailDrafter
 
     public function __construct(
         private readonly AiGateway $gateway,
+        private readonly AiAvailability $availability,
         private readonly ClaimChecker $claims,
     ) {}
 
@@ -96,7 +98,8 @@ class ApplicationEmailDrafter
      */
     private function compose(User $user, Resume $resume, JobPosting $posting): array
     {
-        if ($this->gateway->isEnabled(AiTask::DraftEmail)) {
+        // Over the daily allowance or rate-limited: the template still gives a usable draft.
+        if ($this->availability->tryClaim($user, AiTask::DraftEmail)) {
             try {
                 $result = $this->gateway->json(
                     new AiRequest(AiTask::DraftEmail, self::SYSTEM, $this->prompt($user, $resume, $posting), temperature: 0.5),

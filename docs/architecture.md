@@ -8,6 +8,8 @@ A job's score has to be **explainable and reproducible**, so the work is split t
 2. **Score in plain PHP.** `MatchScorer` compares the candidate's profile with those requirements. Same input, same score; every point gained or lost becomes a strength or a gap. Weights and score bands live in `config/matching.php`.
 3. **AI explains; it doesn't decide.** `MatchExplainer` turns the computed strengths and gaps into prose. It can't change the score.
 
+Free-tier limits are handled in the gateway, not the features. Each response's `x-ratelimit-*` headers become a `RateLimitSnapshot` (cached per provider). Before calling a provider, the gateway checks that snapshot and skips a provider that would refuse the request. It also trims `max_tokens` to fit the per-minute token limit. `AiAvailability` combines that with each user's daily allowance (`UserAiAllowance`) and is checked when the button is pressed, so users get an honest "try again in about 2 minutes" instead of a failed job later.
+
 Tailoring follows the same rule: the model may only reword bullets that already exist, must cite the bullet ids it used, and `ProvenanceGuard` drops anything uncited and flags new numbers or skills for the user to confirm.
 
 ## Request and job flow

@@ -65,6 +65,18 @@ Providers are tried in `AI_PROVIDER_PRIORITY` order. A rate-limited or failing p
 
 > After changing `.env`, restart the queue worker. Workers keep the environment they started with.
 
+#### Running on a free tier (Groq)
+
+Set only `GROQ_API_KEY` and the app runs on Groq alone. Free tiers are tight and the key is shared by every account, so the app:
+
+- reads Groq's `x-ratelimit-*` headers after every call (requests left today, tokens left this minute) and skips Groq **before** a call it would reject, instead of collecting 429s;
+- backs off until Groq's own reset time when a 429 arrives, even without a `Retry-After` header;
+- shrinks the answer budget to fit the per-minute token limit, and moves a request that's still too big to the next provider;
+- gives each account a daily allowance (`AI_USER_DAILY_LIMIT`, default 30), shown next to every AI button as "18 of 30 AI actions left today";
+- tells the user plainly when the free tier is resting ("try again in about 2 minutes") and disables the button until then. Email drafts fall back to the built-in template instead.
+
+Settings → AI providers shows the live quota Groq last reported.
+
 ### Gmail (optional): apply by email
 
 On any job, **Draft application email** writes a draft from your résumé. You review and edit it in the app, then click **Send**: it goes out from your own Gmail with your résumé attached, and the job is marked Applied. The app only asks for permission to **send** (`gmail.send`); it can't read your inbox.

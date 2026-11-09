@@ -201,3 +201,12 @@ export type ApplicationEmail = {
     resume_filename?: string | null;
     posting?: { id: number; title: string; company: string; url: string };
 };
+
+/** Mirrors App\Services\Ai\AiAvailability::status(). */
+export type AiUsage = {
+    enabled: boolean;
+    remaining: number;
+    limit: number;
+    resets_in: number;
+    busy_for: number;
+};

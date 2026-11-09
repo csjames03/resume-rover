@@ -9,8 +9,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { timeAgo } from '@/lib/format';
+import { formatWait, timeAgo } from '@/lib/format';
 import { show } from '@/routes/ai-providers';
+import type { AiUsage } from '@/types';
 
 type Provider = {
     name: string;
@@ -18,6 +19,16 @@ type Provider = {
     model: string;
     configured: boolean;
     cooling_down_until: string | null;
+    // From the provider's last x-ratelimit-* headers (Groq sends them; Gemini doesn't).
+    quota: {
+        limit_requests: number | null;
+        remaining_requests: number | null;
+        requests_reset_at: string | null;
+        limit_tokens: number | null;
+        remaining_tokens: number | null;
+        tokens_reset_at: string | null;
+        observed_at: string;
+    } | null;
 };
 
 type ProviderEvent = {
@@ -34,10 +45,16 @@ type ProviderEvent = {
 type Props = {
     providers: Provider[];
     priority: string[];
+    usage: AiUsage;
     events: ProviderEvent[];
 };
 
-export default function AiProviders({ providers, priority, events }: Props) {
+export default function AiProviders({
+    providers,
+    priority,
+    usage,
+    events,
+}: Props) {
     const ordered = [...providers].sort(
         (a, b) => rank(priority, a.name) - rank(priority, b.name),
     );
@@ -69,11 +86,27 @@ export default function AiProviders({ providers, priority, events }: Props) {
                                     <p className="text-muted-foreground">
                                         {provider.model}
                                     </p>
+                                    {provider.quota && (
+                                        <QuotaLine quota={provider.quota} />
+                                    )}
                                 </div>
                                 <ProviderState provider={provider} />
                             </li>
                         ))}
                     </ol>
+
+                    <p className="rounded-lg bg-muted/60 p-3 text-sm">
+                        You have{' '}
+                        <strong className="tabular-nums">
+                            {usage.remaining} of {usage.limit}
+                        </strong>{' '}
+                        AI actions left today
+                        {usage.resets_in > 0 &&
+                            ` (resets in ${formatWait(usage.resets_in)})`}
+                        . Everyone shares the app's API key, so each account
+                        gets a daily allowance (<code>AI_USER_DAILY_LIMIT</code>
+                        ).
+                    </p>
 
                     <p className="text-xs text-muted-foreground">
                         Set <code>GEMINI_API_KEY</code>,{' '}
@@ -182,3 +215,33 @@ function rank(priority: string[], name: string): number {
 AiProviders.layout = {
     breadcrumbs: [{ title: 'AI providers', href: show() }],
 };
+
+/**
+ * "Today: 812 of 1,000 requests left · This minute: 9,400 of 12,000 tokens".
+ * Groq's free tier counts requests per day and tokens per minute.
+ */
+function QuotaLine({ quota }: { quota: NonNullable<Provider['quota']> }) {
+    const parts: string[] = [];
+
+    if (quota.remaining_requests !== null && quota.limit_requests !== null) {
+        parts.push(
+            `Requests: ${quota.remaining_requests.toLocaleString()} of ${quota.limit_requests.toLocaleString()} left`,
+        );
+    }
+
+    if (quota.remaining_tokens !== null && quota.limit_tokens !== null) {
+        parts.push(
+            `Tokens this minute: ${quota.remaining_tokens.toLocaleString()} of ${quota.limit_tokens.toLocaleString()}`,
+        );
+    }
+
+    if (parts.length === 0) {
+        return null;
+    }
+
+    return (
+        <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+            {parts.join(' · ')} · checked {timeAgo(quota.observed_at)}
+        </p>
+    );
+}

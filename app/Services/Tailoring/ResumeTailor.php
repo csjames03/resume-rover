@@ -12,6 +12,7 @@ use App\Models\JobRequirement;
 use App\Models\ResumeSection;
 use App\Models\TailoredResume;
 use App\Models\User;
+use App\Services\Ai\AiAvailability;
 use App\Services\Ai\AiGateway;
 use App\Services\Ai\Data\AiRequest;
 use DomainException;
@@ -33,6 +34,7 @@ class ResumeTailor
 
     public function __construct(
         private readonly AiGateway $gateway,
+        private readonly AiAvailability $availability,
         private readonly ProvenanceGuard $guard,
     ) {}
 
@@ -47,9 +49,8 @@ class ResumeTailor
             throw new DomainException('Upload and review your résumé before tailoring.');
         }
 
-        if (! $this->gateway->isEnabled(AiTask::TailorResume)) {
-            throw new DomainException('Tailoring needs an AI provider. Add an API key in your .env file.');
-        }
+        // Throws AiLimitReached (a DomainException) with a message for the user.
+        $this->availability->claim($user, AiTask::TailorResume);
 
         $version = (int) TailoredResume::query()
             ->where('resume_id', $resume->id)

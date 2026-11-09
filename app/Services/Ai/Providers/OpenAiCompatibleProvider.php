@@ -7,6 +7,8 @@ use App\Services\Ai\Contracts\AiProvider;
 use App\Services\Ai\Data\AiRequest;
 use App\Services\Ai\Data\AiResponse;
 use App\Services\Ai\Exceptions\AiProviderException;
+use App\Services\Ai\Quota\RateLimitSnapshot;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -61,14 +63,19 @@ class OpenAiCompatibleProvider implements AiProvider
             throw new AiProviderException(AiOutcome::Timeout, Str::limit($e->getMessage(), 200));
         }
 
+        $rateLimit = RateLimitSnapshot::fromHeaders(
+            fn (string $name) => $response->header($name) ?: null,
+            CarbonImmutable::now(),
+        );
+
         if ($response->failed()) {
-            throw $this->classifyFailure($response);
+            throw $this->classifyFailure($response, $rateLimit);
         }
 
         $content = $response->json('choices.0.message.content');
 
         if (! is_string($content) || trim($content) === '') {
-            throw new AiProviderException(AiOutcome::InvalidOutput, 'Empty completion.', $response->status());
+            throw new AiProviderException(AiOutcome::InvalidOutput, 'Empty completion.', $response->status(), rateLimit: $rateLimit);
         }
 
         return new AiResponse(
@@ -76,16 +83,20 @@ class OpenAiCompatibleProvider implements AiProvider
             httpStatus: $response->status(),
             inputTokens: $this->intOrNull($response->json('usage.prompt_tokens')),
             outputTokens: $this->intOrNull($response->json('usage.completion_tokens')),
+            rateLimit: $rateLimit,
         );
     }
 
-    private function classifyFailure(Response $response): AiProviderException
+    private function classifyFailure(Response $response, ?RateLimitSnapshot $rateLimit): AiProviderException
     {
         $status = $response->status();
         $message = Str::limit((string) ($response->json('error.message') ?? $response->body()), 300);
-        $retryAfter = $this->intOrNull($response->header('Retry-After'));
+        // Without Retry-After, the quota headers still say when the limit resets.
+        $retryAfter = $this->intOrNull($response->header('Retry-After'))
+            ?? $rateLimit?->retryAfterSeconds(CarbonImmutable::now());
 
         $outcome = match (true) {
+            $this->looksTooLarge($status, $message) => AiOutcome::TooLarge,
             $status === 429 && $this->looksLikeQuota($message) => AiOutcome::QuotaExhausted,
             $status === 429 => AiOutcome::RateLimited,
             $status === 402 => AiOutcome::QuotaExhausted,
@@ -95,7 +106,15 @@ class OpenAiCompatibleProvider implements AiProvider
             default => AiOutcome::ServerError, // 5xx, or 404 for a model this provider doesn't serve
         };
 
-        return new AiProviderException($outcome, $message, $status, $retryAfter);
+        return new AiProviderException($outcome, $message, $status, $retryAfter, $rateLimit);
+    }
+
+    /**
+     * Groq answers 413 when one request asks for more tokens than its per-minute limit.
+     */
+    private function looksTooLarge(int $status, string $message): bool
+    {
+        return $status === 413 || Str::contains(Str::lower($message), ['request too large', 'reduce your message size']);
     }
 
     private function looksLikeQuota(string $message): bool

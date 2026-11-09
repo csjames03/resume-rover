@@ -3,6 +3,7 @@
 namespace App\Services\Ai\Exceptions;
 
 use App\Enums\AiOutcome;
+use App\Services\Ai\Quota\RateLimitSnapshot;
 use RuntimeException;
 
 /**
@@ -15,6 +16,7 @@ class AiProviderException extends RuntimeException
         string $message,
         public readonly ?int $httpStatus = null,
         public readonly ?int $retryAfterSeconds = null,
+        public readonly ?RateLimitSnapshot $rateLimit = null,
     ) {
         parent::__construct($message);
     }

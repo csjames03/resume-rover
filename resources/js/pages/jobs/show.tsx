@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, timeAgo } from '@/lib/format';
 import { index } from '@/routes/jobs';
 import type {
+    AiUsage,
     Application,
     ApplicationEmail,
     JobPosting,
@@ -34,7 +35,7 @@ type Props = {
     tailoredResumes: TailoredResume[];
     applicationEmails: ApplicationEmail[];
     statuses: Option[];
-    ai: { explain: boolean; tailor: boolean };
+    ai: { explain: boolean; tailor: boolean; usage: AiUsage };
 };
 
 export default function JobShow({
@@ -52,7 +53,7 @@ export default function JobShow({
 
     const { start, stop } = usePoll(
         3000,
-        { only: ['posting', 'tailoredResumes'] },
+        { only: ['posting', 'tailoredResumes', 'ai'] },
         { autoStart: false },
     );
     useEffect(() => {
@@ -171,6 +172,7 @@ export default function JobShow({
                         postingId={posting.id}
                         match={posting.match}
                         aiEnabled={ai.explain}
+                        usage={ai.usage}
                     />
                     <ApplicationPanel
                         postingId={posting.id}
@@ -183,11 +185,13 @@ export default function JobShow({
                         tailoredResumes={tailoredResumes}
                         aiEnabled={ai.tailor}
                         canTailor={posting.match !== null}
+                        usage={ai.usage}
                     />
                     <EmailPanel
                         postingId={posting.id}
                         emails={applicationEmails}
                         canDraft={posting.match !== null}
+                        usage={ai.usage}
                     />
                 </aside>
             </div>

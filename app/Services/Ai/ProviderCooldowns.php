@@ -44,21 +44,6 @@ class ProviderCooldowns
         $this->cache->forget($this->failuresKey($provider));
     }
 
-    /**
-     * Seconds until the first of the given providers becomes usable again.
-     *
-     * @param  list<string>  $providers
-     */
-    public function secondsUntilAnyAvailable(array $providers): ?int
-    {
-        $waits = array_filter(array_map(
-            fn (string $provider) => $this->until($provider)?->diffInSeconds(now(), absolute: true),
-            $providers,
-        ), fn (?float $seconds) => $seconds !== null);
-
-        return $waits === [] ? null : (int) ceil(min($waits));
-    }
-
     private function cooldownSeconds(AiOutcome $outcome, int $failures, ?int $retryAfterSeconds): int
     {
         $config = config('ai.cooldown');

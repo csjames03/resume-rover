@@ -50,6 +50,11 @@ return [
 
     'timeout_seconds' => (int) env('AI_TIMEOUT_SECONDS', 60),
 
+    // AI actions (explanations, tailored drafts, email drafts) each user may start per rolling
+    // 24 hours. Everyone shares the app's API key, so this keeps one user from using up a
+    // free tier. Always at least 1.
+    'user_daily_limit' => (int) env('AI_USER_DAILY_LIMIT', 30),
+
     // Benching a failing provider stops us from hammering a rate limit.
     'cooldown' => [
         'base_seconds' => 30,

@@ -66,3 +66,20 @@ export function formatBytes(bytes: number): string {
 export function formatMinutes(minutes: number): string {
     return minutes % 60 === 0 ? `${minutes / 60} h` : `${minutes} min`;
 }
+
+/** "about 40 seconds", "about 3 minutes", "about 2 hours" (mirrors the server's wording). */
+export function formatWait(seconds: number): string {
+    if (seconds < 60) {
+        return `about ${Math.max(5, Math.ceil(seconds / 5) * 5)} seconds`;
+    }
+
+    if (seconds < 3600) {
+        const minutes = Math.ceil(seconds / 60);
+
+        return `about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+    }
+
+    const hours = Math.ceil(seconds / 3600);
+
+    return `about ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+}

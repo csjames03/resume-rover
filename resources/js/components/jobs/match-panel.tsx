@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { Check, Minus, Sparkles, X } from 'lucide-react';
 import MatchExplanationController from '@/actions/App/Http/Controllers/MatchExplanationController';
 import { FitBadge, ScoreBar } from '@/components/fit-badge';
+import { AiUsageNote, useAiGate } from '@/components/jobs/ai-usage';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +13,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
-import type { JobMatch, MatchPoint } from '@/types';
+import type { AiUsage, JobMatch, MatchPoint } from '@/types';
 
 /**
  * Score, category, and every reason behind them.
@@ -21,10 +22,12 @@ export function MatchPanel({
     postingId,
     match,
     aiEnabled,
+    usage,
 }: {
     postingId: number;
     match: JobMatch | null;
     aiEnabled: boolean;
+    usage: AiUsage;
 }) {
     if (!match) {
         return (
@@ -78,6 +81,7 @@ export function MatchPanel({
                     postingId={postingId}
                     match={match}
                     aiEnabled={aiEnabled}
+                    usage={usage}
                 />
             </CardContent>
         </Card>
@@ -135,11 +139,14 @@ function Explanation({
     postingId,
     match,
     aiEnabled,
+    usage,
 }: {
     postingId: number;
     match: JobMatch;
     aiEnabled: boolean;
+    usage: AiUsage;
 }) {
+    const gate = useAiGate(usage);
     const request = () =>
         router.post(
             MatchExplanationController.store(postingId).url,
@@ -171,15 +178,21 @@ function Explanation({
     }
 
     return (
-        <div className="space-y-1">
+        <div className="space-y-2">
             {match.explanation_status === 'failed' && (
                 <p className="text-xs text-destructive">
                     The AI providers were unavailable. Try again in a minute.
                 </p>
             )}
-            <Button variant="outline" size="sm" onClick={request}>
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={request}
+                disabled={gate.blockedReason !== null}
+            >
                 <Sparkles /> Explain this score
             </Button>
+            <AiUsageNote gate={gate} />
         </div>
     );
 }

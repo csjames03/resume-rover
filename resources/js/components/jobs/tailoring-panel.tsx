@@ -1,6 +1,7 @@
 import { Link, router } from '@inertiajs/react';
 import { FileText, Wand2 } from 'lucide-react';
 import TailoredResumeController from '@/actions/App/Http/Controllers/TailoredResumeController';
+import { AiUsageNote, useAiGate } from '@/components/jobs/ai-usage';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { timeAgo } from '@/lib/format';
-import type { TailoredResume } from '@/types';
+import type { AiUsage, TailoredResume } from '@/types';
 
 const STATUS_LABEL: Record<TailoredResume['status'], string> = {
     generating: 'Generating',
@@ -26,12 +27,15 @@ export function TailoringPanel({
     tailoredResumes,
     aiEnabled,
     canTailor,
+    usage,
 }: {
     postingId: number;
     tailoredResumes: TailoredResume[];
     aiEnabled: boolean;
     canTailor: boolean;
+    usage: AiUsage;
 }) {
+    const gate = useAiGate(usage);
     const generate = () =>
         router.post(TailoredResumeController.store(postingId).url);
 
@@ -82,16 +86,19 @@ export function TailoringPanel({
                 )}
 
                 {aiEnabled ? (
-                    <Button
-                        variant="outline"
-                        onClick={generate}
-                        disabled={!canTailor}
-                    >
-                        <Wand2 />{' '}
-                        {tailoredResumes.length > 0
-                            ? 'Generate another version'
-                            : 'Generate draft'}
-                    </Button>
+                    <div className="space-y-2">
+                        <Button
+                            variant="outline"
+                            onClick={generate}
+                            disabled={!canTailor || gate.blockedReason !== null}
+                        >
+                            <Wand2 />{' '}
+                            {tailoredResumes.length > 0
+                                ? 'Generate another version'
+                                : 'Generate draft'}
+                        </Button>
+                        <AiUsageNote gate={gate} />
+                    </div>
                 ) : (
                     <p className="text-sm text-muted-foreground">
                         Needs an AI provider. Add a Gemini, Groq or OpenRouter
