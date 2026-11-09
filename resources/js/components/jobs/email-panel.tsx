@@ -1,4 +1,5 @@
 import { Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import { Mail } from 'lucide-react';
 import ApplicationEmailController from '@/actions/App/Http/Controllers/ApplicationEmailController';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { timeAgo } from '@/lib/format';
 import type { AiUsage, ApplicationEmail } from '@/types';
 
@@ -35,8 +37,18 @@ export function EmailPanel({
     usage: AiUsage;
 }) {
     const gate = useAiGate(usage);
+    const [drafting, setDrafting] = useState(false);
+
+    // The AI writes the draft during the request, which can take 10-20 seconds on free tiers.
     const draft = () =>
-        router.post(ApplicationEmailController.store(postingId).url);
+        router.post(
+            ApplicationEmailController.store(postingId).url,
+            {},
+            {
+                onStart: () => setDrafting(true),
+                onFinish: () => setDrafting(false),
+            },
+        );
 
     return (
         <Card>
@@ -84,11 +96,17 @@ export function EmailPanel({
                     </ul>
                 )}
 
-                <Button variant="outline" onClick={draft} disabled={!canDraft}>
-                    <Mail />{' '}
-                    {emails.length > 0
-                        ? 'Write another email'
-                        : 'Draft application email'}
+                <Button
+                    variant="outline"
+                    onClick={draft}
+                    disabled={!canDraft || drafting}
+                >
+                    {drafting ? <Spinner /> : <Mail />}{' '}
+                    {drafting
+                        ? 'Writing your draft…'
+                        : emails.length > 0
+                          ? 'Write another email'
+                          : 'Draft application email'}
                 </Button>
                 {canDraft ? (
                     // Never blocked: without AI the draft comes from a template.

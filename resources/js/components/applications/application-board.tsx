@@ -1,4 +1,8 @@
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import type {
+    DragEndEvent,
+    DragStartEvent,
+    KeyboardCoordinateGetter,
+} from '@dnd-kit/core';
 import {
     DndContext,
     DragOverlay,
@@ -31,6 +35,43 @@ const COLUMNS: ApplicationStatus[] = [
 ];
 
 /**
+ * Left/right arrows jump straight to the neighbouring column. dnd-kit's
+ * default nudges 25px per press, which takes a dozen presses to change status.
+ */
+const columnCoordinates: KeyboardCoordinateGetter = (
+    event,
+    { currentCoordinates, context },
+) => {
+    const step =
+        event.code === 'ArrowRight' ? 1 : event.code === 'ArrowLeft' ? -1 : 0;
+    const dragged = context.collisionRect;
+
+    if (step === 0 || !dragged) {
+        return undefined;
+    }
+
+    event.preventDefault();
+
+    const columns = COLUMNS.map((status) =>
+        context.droppableRects.get(status),
+    ).filter((rect) => rect !== undefined);
+    const centerX = dragged.left + dragged.width / 2;
+    const current = columns.findIndex(
+        (rect) => centerX >= rect.left && centerX <= rect.left + rect.width,
+    );
+    const target = columns[current + step];
+
+    if (current === -1 || !target) {
+        return currentCoordinates;
+    }
+
+    return {
+        x: currentCoordinates.x + (target.left + target.width / 2 - centerX),
+        y: currentCoordinates.y + (target.top + 48 - dragged.top),
+    };
+};
+
+/**
  * Kanban view of the pipeline. Dropping a card on another column changes its
  * status. The card moves at once and the server confirms it in the background.
  */
@@ -52,7 +93,7 @@ export function ApplicationBoard({
     const sensors = useSensors(
         // A small distance keeps plain clicks on the job link working.
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-        useSensor(KeyboardSensor),
+        useSensor(KeyboardSensor, { coordinateGetter: columnCoordinates }),
     );
 
     const statusOf = (application: Application) =>
