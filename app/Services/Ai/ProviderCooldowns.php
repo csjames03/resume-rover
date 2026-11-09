@@ -48,7 +48,8 @@ class ProviderCooldowns
     {
         $config = config('ai.cooldown');
 
-        if ($outcome === AiOutcome::AuthError) {
+        // Retrying in seconds can't fix a bad key or a retired model.
+        if (in_array($outcome, [AiOutcome::AuthError, AiOutcome::ModelUnavailable], true)) {
             return (int) $config['auth_error_seconds'];
         }
 

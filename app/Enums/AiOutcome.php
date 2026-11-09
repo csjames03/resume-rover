@@ -19,6 +19,8 @@ enum AiOutcome: string
     case InvalidOutput = 'invalid_output';
     // Bigger than this provider's per-minute token allowance; another provider may take it.
     case TooLarge = 'too_large';
+    // The configured model was retired or isn't available to this key: a setup problem.
+    case ModelUnavailable = 'model_unavailable';
 
     /**
      * Whether trying another provider could succeed where this one failed.
@@ -40,6 +42,7 @@ enum AiOutcome: string
             self::Timeout,
             self::ServerError,
             self::AuthError,
+            self::ModelUnavailable,
         ], true);
     }
 }

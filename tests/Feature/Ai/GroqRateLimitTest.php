@@ -130,6 +130,22 @@ class GroqRateLimitTest extends TestCase
         $this->assertDatabaseHas('ai_provider_events', ['provider' => 'groq', 'outcome' => AiOutcome::TooLarge->value]);
     }
 
+    public function test_a_retired_model_is_benched_as_a_setup_problem_and_skipped(): void
+    {
+        config(['ai.providers.openrouter.api_key' => 'test-openrouter', 'ai.priority' => ['groq', 'openrouter']]);
+        Http::fake([
+            'api.groq.com/*' => Http::response(['error' => ['message' => 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.']], 404),
+            'openrouter.ai/*' => $this->completion(['summary' => 'from openrouter']),
+        ]);
+
+        $result = app(AiGateway::class)->json($this->request(), self::RULES);
+
+        $this->assertSame('openrouter', $result->provider);
+        $this->assertDatabaseHas('ai_provider_events', ['provider' => 'groq', 'outcome' => AiOutcome::ModelUnavailable->value]);
+        // Benched like a bad key: retrying in seconds can't fix a retired model.
+        $this->assertGreaterThan(3000, now()->diffInSeconds(app(ProviderCooldowns::class)->until('groq'), absolute: true));
+    }
+
     public function test_each_user_has_a_daily_ai_allowance(): void
     {
         Queue::fake();
@@ -175,7 +191,7 @@ class GroqRateLimitTest extends TestCase
         $this->actingAs($user)->post(route('jobs.application-emails.store', $posting));
         $this->actingAs($user)->post(route('jobs.application-emails.store', $posting));
 
-        $this->assertSame(['groq (llama-3.3-70b-versatile)', 'template'], ApplicationEmail::query()->orderBy('id')->pluck('drafted_by')->all());
+        $this->assertSame(['groq ('.config('ai.providers.groq.model').')', 'template'], ApplicationEmail::query()->orderBy('id')->pluck('drafted_by')->all());
         Http::assertSentCount(1);
     }
 

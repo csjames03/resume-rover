@@ -27,13 +27,14 @@ return [
             'label' => 'Groq',
             'base_url' => env('GROQ_BASE_URL', 'https://api.groq.com/openai/v1'),
             'api_key' => env('GROQ_API_KEY'),
-            'model' => env('GROQ_MODEL', 'llama-3.3-70b-versatile'),
+            'model' => env('GROQ_MODEL', 'openai/gpt-oss-120b'),
+            'reasoning_effort' => env('GROQ_REASONING_EFFORT', 'low'),
         ],
         'openrouter' => [
             'label' => 'OpenRouter',
             'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
             'api_key' => env('OPENROUTER_API_KEY'),
-            'model' => env('OPENROUTER_MODEL', 'meta-llama/llama-3.3-70b-instruct:free'),
+            'model' => env('OPENROUTER_MODEL', 'recursive/flint-v1.0:free'),
         ],
     ],
 

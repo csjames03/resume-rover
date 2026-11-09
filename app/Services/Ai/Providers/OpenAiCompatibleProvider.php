@@ -97,6 +97,7 @@ class OpenAiCompatibleProvider implements AiProvider
 
         $outcome = match (true) {
             $this->looksTooLarge($status, $message) => AiOutcome::TooLarge,
+            $this->looksLikeMissingModel($status, $message) => AiOutcome::ModelUnavailable,
             $status === 429 && $this->looksLikeQuota($message) => AiOutcome::QuotaExhausted,
             $status === 429 => AiOutcome::RateLimited,
             $status === 402 => AiOutcome::QuotaExhausted,
@@ -107,6 +108,16 @@ class OpenAiCompatibleProvider implements AiProvider
         };
 
         return new AiProviderException($outcome, $message, $status, $retryAfter, $rateLimit);
+    }
+
+    /**
+     * Free models get retired often: Groq says "does not exist", OpenRouter "unavailable".
+     */
+    private function looksLikeMissingModel(int $status, string $message): bool
+    {
+        return in_array($status, [400, 404], true)
+            && Str::contains(Str::lower($message), ['model', 'slug'])
+            && Str::contains(Str::lower($message), ['does not exist', 'not found', 'unavailable', 'decommissioned', 'no endpoints']);
     }
 
     /**
