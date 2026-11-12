@@ -3,7 +3,7 @@
 # One image runs everything Render's free plan allows in a single service:
 # nginx + PHP-FPM for the site, the queue worker and the scheduler (see docker/).
 
-FROM php:8.3-fpm-bookworm AS base
+FROM php:8.4-fpm-bookworm AS base
 
 # poppler-utils provides pdftotext, the best extractor for résumé PDFs.
 RUN apt-get update \
