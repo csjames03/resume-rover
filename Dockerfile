@@ -32,8 +32,10 @@ COPY package.json package-lock.json .npmrc ./
 RUN npm ci
 
 COPY . .
+# Wayfinder boots artisan during the Vite build, and Laravel needs an APP_KEY to boot.
+# This throwaway key lives only for this command; the real one is set on Render at runtime.
 RUN composer dump-autoload --optimize --classmap-authoritative --no-dev \
-    && npm run build \
+    && APP_KEY="base64:$(head -c 32 /dev/urandom | base64)" npm run build \
     && rm -rf node_modules
 
 
