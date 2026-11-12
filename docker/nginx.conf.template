@@ -28,6 +28,11 @@ server {
         include fastcgi_params;
         fastcgi_hide_header X-Powered-By;
         fastcgi_read_timeout 120s;
+
+        # Inertia pages send ~6 KB of headers (asset preload Link, CSP, cookies).
+        # nginx's 4 KB default rejects them with a 502.
+        fastcgi_buffer_size 32k;
+        fastcgi_buffers 16 16k;
     }
 
     # Dotfiles (.env and friends) are never served.
