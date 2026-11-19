@@ -29,6 +29,9 @@ export default defineConfig({
         }),
     ]),
     server: {
+        // An IPv6 address like http://[::1]:5173 is not a valid CSP source, so browsers
+        // would block every dev asset. 127.0.0.1 can be listed (see SecurityHeaders).
+        host: '127.0.0.1',
         watch: {
             ignored: [
                 '**/.agents/**',
