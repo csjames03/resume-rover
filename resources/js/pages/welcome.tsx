@@ -8,7 +8,7 @@ import {
     ShieldCheck,
     Wand2,
 } from 'lucide-react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import AppLogoLockup from '@/components/app-logo-lockup';
 import { CompanyAvatar } from '@/components/company-avatar';
 import { FitBadge, ScoreRing } from '@/components/fit-badge';
 import { Button } from '@/components/ui/button';
@@ -41,7 +41,7 @@ const FEATURES = [
 ];
 
 export default function Welcome() {
-    const { auth, name, canRegister } = usePage().props;
+    const { auth, canRegister } = usePage().props;
 
     return (
         <>
@@ -51,16 +51,11 @@ export default function Welcome() {
                 {/* Soft brand glow behind the hero; purely decorative. */}
                 <div
                     aria-hidden
-                    className="absolute inset-x-0 -top-40 -z-10 h-[560px] bg-[radial-gradient(60%_60%_at_50%_0%,color-mix(in_oklch,var(--primary)_18%,transparent),transparent)]"
+                    className="absolute inset-x-0 -top-40 -z-10 h-[560px] bg-[radial-gradient(60%_60%_at_50%_0%,color-mix(in_oklch,var(--brand)_18%,transparent),transparent)]"
                 />
 
                 <header className="mx-auto flex w-full max-w-6xl items-center justify-between p-6">
-                    <div className="flex items-center gap-2.5 text-lg font-bold tracking-tight">
-                        <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-                            <AppLogoIcon className="size-5 fill-current" />
-                        </span>
-                        {name}
-                    </div>
+                    <AppLogoLockup className="h-9 w-auto sm:h-10" />
                     <nav className="flex gap-2">
                         {auth.user ? (
                             <Button asChild>
@@ -85,7 +80,7 @@ export default function Welcome() {
 
                 <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-20 px-6 pt-10 pb-20 lg:pt-16">
                     <section className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr]">
-                        <div className="space-y-6">
+                        <div className="animate-enter space-y-6">
                             <p className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
                                 <span className="size-1.5 rounded-full bg-fit-strong" />
                                 Explainable job matching
@@ -127,14 +122,16 @@ export default function Welcome() {
                             </div>
                         </div>
 
-                        <PreviewCard />
+                        <div className="animate-enter [animation-delay:120ms]">
+                            <PreviewCard />
+                        </div>
                     </section>
 
-                    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <section className="grid stagger gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {FEATURES.map((feature) => (
                             <div
                                 key={feature.title}
-                                className="rounded-xl border bg-card p-5 shadow-sm"
+                                className="rounded-xl border bg-card p-5 shadow-xs transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
                             >
                                 <span className="mb-4 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                     <feature.icon

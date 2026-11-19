@@ -57,21 +57,24 @@ type Props = {
 
 const CATEGORY_CARDS: Record<
     MatchCategory,
-    { icon: LucideIcon; tone: string; hint: string }
+    { icon: LucideIcon; tone: string; bar: string; hint: string }
 > = {
     strong: {
         icon: Target,
         tone: 'bg-fit-strong/12 text-fit-strong',
+        bar: 'bg-fit-strong',
         hint: 'Apply to these first',
     },
     relevant: {
         icon: TrendingUp,
         tone: 'bg-fit-relevant/14 text-fit-relevant',
+        bar: 'bg-fit-relevant',
         hint: 'Worth a closer look',
     },
     low: {
         icon: CircleDashed,
         tone: 'bg-fit-low/14 text-fit-low',
+        bar: 'bg-fit-low',
         hint: 'Probably not for you',
     },
 };
@@ -97,6 +100,7 @@ export default function Dashboard({
 }: Props) {
     const { auth } = usePage().props;
     const firstName = auth.user.name.split(' ')[0];
+    const scored = matchCounts.reduce((sum, count) => sum + count.total, 0);
 
     return (
         <>
@@ -126,9 +130,13 @@ export default function Dashboard({
                     aiEnabled={aiEnabled}
                 />
 
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid stagger gap-4 sm:grid-cols-3">
                     {matchCounts.map((count) => (
-                        <StatCard key={count.category} {...count} />
+                        <StatCard
+                            key={count.category}
+                            {...count}
+                            share={scored > 0 ? count.total / scored : 0}
+                        />
                     ))}
                 </div>
 
@@ -177,33 +185,50 @@ export default function Dashboard({
     );
 }
 
-function StatCard({ category, label, total }: Props['matchCounts'][number]) {
+function StatCard({
+    category,
+    label,
+    total,
+    share,
+}: Props['matchCounts'][number] & { share: number }) {
     const card = CATEGORY_CARDS[category];
 
     return (
         <Link
             href={jobsIndex({ query: { category } })}
-            className="group relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            className="group rounded-xl border bg-card p-5 shadow-xs transition-[translate,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-foreground/15 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
-            <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2.5">
                 <span
                     className={cn(
-                        'flex size-10 items-center justify-center rounded-lg',
+                        'flex size-8 items-center justify-center rounded-lg',
                         card.tone,
                     )}
                 >
-                    <card.icon className="size-5" aria-hidden />
+                    <card.icon className="size-4" aria-hidden />
                 </span>
+                <span className="text-sm font-medium">{label}</span>
                 <ArrowUpRight
-                    className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                    className="ml-auto size-4 -translate-x-1 text-muted-foreground opacity-0 transition-[opacity,translate] duration-200 group-hover:translate-x-0 group-hover:opacity-100"
                     aria-hidden
                 />
             </div>
             <p className="mt-4 text-3xl font-bold tracking-tight tabular-nums">
-                {total}
+                {total.toLocaleString()}
             </p>
-            <p className="text-sm font-medium">{label}</p>
-            <p className="text-xs text-muted-foreground">{card.hint}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{card.hint}</p>
+            <div
+                className="mt-4 h-1 overflow-hidden rounded-full bg-muted"
+                role="img"
+                aria-label={`${Math.round(share * 100)}% of scored jobs`}
+            >
+                <div
+                    className={cn('h-full rounded-full', card.bar)}
+                    style={{
+                        width: `${Math.max(share * 100, total > 0 ? 2 : 0)}%`,
+                    }}
+                />
+            </div>
         </Link>
     );
 }

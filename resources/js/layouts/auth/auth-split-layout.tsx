@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import AppLogoLockup from '@/components/app-logo-lockup';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
@@ -19,23 +20,21 @@ export default function AuthSplitLayout({
 
     return (
         <div className="grid min-h-dvh lg:grid-cols-2">
-            <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
+            <div className="relative hidden flex-col justify-between overflow-hidden bg-brand-ink p-10 text-white lg:flex">
                 <div
                     aria-hidden
-                    className="absolute -right-32 -bottom-32 size-[480px] rounded-full bg-white/10 blur-3xl"
+                    className="absolute -right-40 -bottom-40 size-[520px] rounded-full bg-brand/25 blur-3xl"
                 />
-                <AppLogoIcon
+                <div
                     aria-hidden
-                    className="absolute -top-20 -right-20 size-96 fill-current opacity-[0.07]"
+                    className="absolute -top-24 -left-24 size-80 rounded-full bg-brand/10 blur-3xl"
                 />
 
                 <Link
                     href={home()}
-                    className="relative flex items-center gap-2.5 text-lg font-bold tracking-tight"
+                    className="relative flex items-center gap-3 text-lg font-bold tracking-tight"
                 >
-                    <span className="flex size-9 items-center justify-center rounded-lg bg-white/15">
-                        <AppLogoIcon className="size-5 fill-current" />
-                    </span>
+                    <AppLogoIcon className="size-10 rounded-xl ring-1 ring-white/10" />
                     {name}
                 </Link>
 
@@ -47,9 +46,9 @@ export default function AuthSplitLayout({
                         {POINTS.map((point) => (
                             <li
                                 key={point}
-                                className="flex items-center gap-3 text-primary-foreground/90"
+                                className="flex items-center gap-3 text-white/85"
                             >
-                                <span className="flex size-6 items-center justify-center rounded-full bg-white/15">
+                                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand/20 text-brand">
                                     <Check className="size-3.5" aria-hidden />
                                 </span>
                                 {point}
@@ -58,21 +57,15 @@ export default function AuthSplitLayout({
                     </ul>
                 </div>
 
-                <p className="relative text-sm text-primary-foreground/70">
+                <p className="relative text-sm text-white/60">
                     Official public job feeds only. Your data stays yours.
                 </p>
             </div>
 
             <div className="flex items-center justify-center p-6 md:p-10">
-                <div className="flex w-full max-w-sm flex-col gap-6">
-                    <Link
-                        href={home()}
-                        className="flex items-center gap-2.5 font-bold tracking-tight lg:hidden"
-                    >
-                        <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                            <AppLogoIcon className="size-5 fill-current" />
-                        </span>
-                        {name}
+                <div className="flex w-full max-w-sm animate-enter flex-col gap-6">
+                    <Link href={home()} className="w-fit lg:hidden">
+                        <AppLogoLockup className="h-9 w-auto" />
                     </Link>
                     <div className="space-y-1.5">
                         <h1 className="text-2xl font-bold tracking-tight">

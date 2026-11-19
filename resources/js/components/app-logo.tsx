@@ -7,9 +7,10 @@ export default function AppLogo() {
 
     return (
         <>
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
-                <AppLogoIcon className="size-5 fill-current" />
-            </div>
+            {/* Wrapped: the sidebar button shrinks direct <svg> children to 16px. */}
+            <span className="flex size-8 shrink-0">
+                <AppLogoIcon className="size-8 rounded-lg" />
+            </span>
             <div className="ml-1 grid flex-1 text-left">
                 <span className="truncate text-[15px] leading-tight font-bold tracking-tight">
                     {name}

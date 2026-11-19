@@ -62,30 +62,30 @@
 }
 
 /*
- * Design tokens. Cool neutrals with a single confident blue; the sidebar is
+ * Design tokens. Cool navy neutrals with the logo's green as the one accent; the sidebar is
  * a shade darker than the content so the page reads as a raised sheet.
  */
 :root {
     --background: oklch(1 0 0);
-    --foreground: oklch(0.21 0.02 262);
+    --foreground: oklch(0.22 0.035 258);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.21 0.02 262);
+    --card-foreground: oklch(0.22 0.035 258);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.21 0.02 262);
-    --primary: oklch(0.52 0.19 262);
+    --popover-foreground: oklch(0.22 0.035 258);
+    --primary: oklch(0.53 0.12 163);
     --primary-foreground: oklch(0.99 0 0);
     --secondary: oklch(0.965 0.006 262);
     --secondary-foreground: oklch(0.3 0.03 262);
     --muted: oklch(0.967 0.004 262);
     --muted-foreground: oklch(0.5 0.02 262);
-    --accent: oklch(0.955 0.02 262);
-    --accent-foreground: oklch(0.36 0.12 262);
+    --accent: oklch(0.96 0.025 163);
+    --accent-foreground: oklch(0.38 0.09 163);
     --destructive: oklch(0.577 0.215 27);
     --destructive-foreground: oklch(0.577 0.215 27);
     --border: oklch(0.92 0.006 262);
     --input: oklch(0.9 0.008 262);
-    --ring: oklch(0.52 0.19 262);
-    --chart-1: oklch(0.52 0.19 262);
+    --ring: oklch(0.63 0.135 162);
+    --chart-1: oklch(0.53 0.12 163);
     --chart-2: oklch(0.62 0.13 185);
     --chart-3: oklch(0.72 0.15 75);
     --chart-4: oklch(0.6 0.2 300);
@@ -93,12 +93,12 @@
     --radius: 0.75rem;
     --sidebar: oklch(0.975 0.004 262);
     --sidebar-foreground: oklch(0.3 0.02 262);
-    --sidebar-primary: oklch(0.52 0.19 262);
+    --sidebar-primary: oklch(0.53 0.12 163);
     --sidebar-primary-foreground: oklch(0.99 0 0);
     --sidebar-accent: oklch(0.935 0.012 262);
     --sidebar-accent-foreground: oklch(0.21 0.02 262);
     --sidebar-border: oklch(0.92 0.006 262);
-    --sidebar-ring: oklch(0.52 0.19 262);
+    --sidebar-ring: oklch(0.63 0.135 162);
 }
 
 .dark {
@@ -108,32 +108,32 @@
     --card-foreground: oklch(0.96 0.004 262);
     --popover: oklch(0.225 0.014 262);
     --popover-foreground: oklch(0.96 0.004 262);
-    --primary: oklch(0.7 0.15 262);
-    --primary-foreground: oklch(0.17 0.03 262);
+    --primary: oklch(0.75 0.14 162);
+    --primary-foreground: oklch(0.18 0.035 258);
     --secondary: oklch(0.27 0.016 262);
     --secondary-foreground: oklch(0.94 0.006 262);
     --muted: oklch(0.255 0.014 262);
     --muted-foreground: oklch(0.7 0.016 262);
-    --accent: oklch(0.29 0.04 262);
-    --accent-foreground: oklch(0.9 0.05 262);
+    --accent: oklch(0.29 0.045 162);
+    --accent-foreground: oklch(0.88 0.08 162);
     --destructive: oklch(0.45 0.16 25);
     --destructive-foreground: oklch(0.7 0.19 25);
     --border: oklch(0.29 0.014 262);
     --input: oklch(0.32 0.016 262);
-    --ring: oklch(0.7 0.15 262);
-    --chart-1: oklch(0.7 0.15 262);
+    --ring: oklch(0.72 0.14 162);
+    --chart-1: oklch(0.75 0.14 162);
     --chart-2: oklch(0.72 0.12 185);
     --chart-3: oklch(0.8 0.14 80);
     --chart-4: oklch(0.7 0.17 300);
     --chart-5: oklch(0.7 0.18 25);
     --sidebar: oklch(0.155 0.01 262);
     --sidebar-foreground: oklch(0.88 0.008 262);
-    --sidebar-primary: oklch(0.7 0.15 262);
-    --sidebar-primary-foreground: oklch(0.17 0.03 262);
+    --sidebar-primary: oklch(0.75 0.14 162);
+    --sidebar-primary-foreground: oklch(0.18 0.035 258);
     --sidebar-accent: oklch(0.24 0.016 262);
     --sidebar-accent-foreground: oklch(0.96 0.004 262);
     --sidebar-border: oklch(0.26 0.012 262);
-    --sidebar-ring: oklch(0.7 0.15 262);
+    --sidebar-ring: oklch(0.72 0.14 162);
 }
 
 @layer base {
@@ -162,6 +162,7 @@
         *::before,
         *::after {
             animation-duration: 0.01ms !important;
+            animation-delay: 0ms !important;
             transition-duration: 0.01ms !important;
         }
     }
@@ -184,4 +185,58 @@
     --fit-strong: oklch(0.74 0.15 155);
     --fit-relevant: oklch(0.8 0.14 80);
     --fit-low: oklch(0.66 0.02 260);
+}
+
+/* Brand green from the logo (score ring). `--primary` is a darker step of it for text contrast. */
+@theme {
+    --color-brand: var(--brand);
+    /* The logo's navy tile. Same in both modes: it's a brand surface, not a theme surface. */
+    --color-brand-ink: oklch(0.21 0.04 258);
+}
+
+:root {
+    --brand: oklch(0.63 0.135 162);
+}
+
+.dark {
+    --brand: oklch(0.72 0.14 162);
+}
+
+/*
+ * Motion. One easing and one entrance used everywhere: short, ease-out, and
+ * transform/opacity only. prefers-reduced-motion (above) switches it off.
+ */
+@theme {
+    --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+    --animate-enter: enter 280ms var(--ease-out-soft) both;
+
+    @keyframes enter {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+    }
+}
+
+/* Children enter one after another (40ms apart, capped so long lists don't wait). */
+@utility stagger {
+    & > * {
+        animation: var(--animate-enter);
+    }
+
+    & > :nth-child(2) {
+        animation-delay: 40ms;
+    }
+
+    & > :nth-child(3) {
+        animation-delay: 80ms;
+    }
+
+    & > :nth-child(4) {
+        animation-delay: 120ms;
+    }
+
+    & > :nth-child(n + 5) {
+        animation-delay: 160ms;
+    }
 }
