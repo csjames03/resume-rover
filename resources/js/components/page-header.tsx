@@ -12,22 +12,26 @@ export function PageHeader({
     eyebrow?: ReactNode;
 }) {
     return (
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0 space-y-1.5">
+        // Wraps instead of squeezing: when the actions don't fit next to the
+        // title, they drop below it rather than crushing the title column.
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+            <div className="min-w-0 flex-[1_1_20rem] space-y-1.5">
                 {eyebrow && (
                     <p className="text-xs font-semibold tracking-wider text-primary uppercase">
                         {eyebrow}
                     </p>
                 )}
-                <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+                <h1 className="text-2xl font-bold tracking-tight md:text-[1.75rem]">
+                    {title}
+                </h1>
                 {description && (
-                    <p className="max-w-2xl text-sm text-muted-foreground">
+                    <p className="max-w-2xl text-sm text-pretty text-muted-foreground">
                         {description}
                     </p>
                 )}
             </div>
             {actions && (
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     {actions}
                 </div>
             )}

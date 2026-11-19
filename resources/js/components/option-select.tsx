@@ -31,13 +31,19 @@ export function OptionSelect({
     placeholder?: string;
     className?: string;
 }) {
+    // Render the label ourselves: Radix only fills it in after the menu has
+    // mounted, so on first paint (and with SSR) the trigger could show up empty.
+    const label =
+        options.find((option) => option.value === value)?.label ??
+        (value == null ? anyLabel : undefined);
+
     return (
         <Select
             value={value ?? (anyLabel ? ANY : undefined)}
             onValueChange={(next) => onChange(next === ANY ? null : next)}
         >
             <SelectTrigger id={id} className={className}>
-                <SelectValue placeholder={placeholder} />
+                <SelectValue placeholder={placeholder}>{label}</SelectValue>
             </SelectTrigger>
             <SelectContent>
                 {anyLabel && <SelectItem value={ANY}>{anyLabel}</SelectItem>}

@@ -76,12 +76,16 @@ export default function JobsIndex({
                         }
                     />
                 ) : (
-                    <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+                    <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-muted/40 hover:bg-muted/40">
-                                    <TableHead className="pl-4">Fit</TableHead>
-                                    <TableHead>Role</TableHead>
+                                    <TableHead className="w-px pl-4">
+                                        Fit
+                                    </TableHead>
+                                    <TableHead className="w-full">
+                                        Role
+                                    </TableHead>
                                     <TableHead className="hidden md:table-cell">
                                         Location
                                     </TableHead>
@@ -91,7 +95,9 @@ export default function JobsIndex({
                                     <TableHead className="hidden lg:table-cell">
                                         Found
                                     </TableHead>
-                                    <TableHead>Status</TableHead>
+                                    <TableHead className="hidden pr-4 sm:table-cell">
+                                        Status
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -116,7 +122,7 @@ function JobRow({ posting }: { posting: JobPosting }) {
     return (
         // The title link stretches over the whole row (after:inset-0), so the row needs `relative`.
         <TableRow className="group relative">
-            <TableCell className="w-40 py-3 pl-4">
+            <TableCell className="w-px py-3 pl-4">
                 {posting.match ? (
                     <div className="flex items-center gap-2.5">
                         <ScoreRing
@@ -133,7 +139,7 @@ function JobRow({ posting }: { posting: JobPosting }) {
                     <NotScoredBadge />
                 )}
             </TableCell>
-            <TableCell className="max-w-md py-3">
+            <TableCell className="w-full max-w-0 py-3">
                 <div className="flex items-center gap-3">
                     <CompanyAvatar
                         name={posting.company}
@@ -158,6 +164,12 @@ function JobRow({ posting }: { posting: JobPosting }) {
                                 </Badge>
                             )}
                         </span>
+                        {posting.application && (
+                            <StatusBadge
+                                status={posting.application.status}
+                                className="mt-1 sm:hidden"
+                            />
+                        )}
                     </div>
                 </div>
             </TableCell>
@@ -173,7 +185,7 @@ function JobRow({ posting }: { posting: JobPosting }) {
             <TableCell className="hidden text-sm whitespace-nowrap text-muted-foreground lg:table-cell">
                 {timeAgo(posting.first_seen_at)}
             </TableCell>
-            <TableCell>
+            <TableCell className="hidden pr-4 sm:table-cell">
                 {posting.application ? (
                     <StatusBadge status={posting.application.status} />
                 ) : (

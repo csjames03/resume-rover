@@ -70,7 +70,21 @@ export default function ResumeShow({
             <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 md:p-8">
                 <PageHeader
                     title="Your résumé"
-                    description="The master profile every job is scored against. Fix anything the parser got wrong."
+                    description={
+                        <>
+                            The master profile every job is scored against. Fix
+                            anything the parser got wrong.
+                            {resume && (
+                                <span className="mt-1 block truncate text-xs">
+                                    {resume.original_filename} ·{' '}
+                                    {formatBytes(resume.file_size)} · uploaded{' '}
+                                    {timeAgo(resume.uploaded_at)}
+                                    {resume.parser &&
+                                        ` · parsed by ${resume.parser}`}
+                                </span>
+                            )}
+                        </>
+                    }
                     actions={resume && <ResumeActions resume={resume} />}
                 />
 
@@ -153,11 +167,6 @@ function ResumeActions({ resume }: { resume: Resume }) {
 
     return (
         <div className="flex flex-wrap items-center gap-2">
-            <span className="hidden text-xs text-muted-foreground md:inline">
-                {resume.original_filename} · {formatBytes(resume.file_size)} ·
-                uploaded {timeAgo(resume.uploaded_at)}
-                {resume.parser && ` · parsed by ${resume.parser}`}
-            </span>
             <UploadCard compact />
             <Button variant="outline" size="sm" onClick={reparse}>
                 <RefreshCw /> Re-parse
